@@ -10,6 +10,10 @@ load_dotenv()
 INPOST_API = os.getenv('INPOST_API')
 base_url = 'https://api-shipx-pl.easypack24.net/'
 
+
+
+
+
 def post_inpost(api_key: str) -> json:
     url = base_url + '/v1/organizations/73164/shipments'
     headers = {
@@ -22,6 +26,15 @@ def post_inpost(api_key: str) -> json:
     }
 
     requests.post(url, headers=headers)
+def set_receiver(receiver: str, parcels: list, cod, insurance: ):
+
+
+    result = {
+        "receiver": receiver,
+
+    }
+
+    return result
 
 
 
