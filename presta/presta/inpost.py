@@ -24,30 +24,34 @@ def post_inpost(api_key: str) -> json:
 
     requests.post(url, headers=headers)
 
-def create_post_request(
-    mpk: str,                                       # skąd ma pobierać opłatę z przesyłkę
-    receiver: json,                                 #
-    sender: json,                                   #
-    parcels: json,                                  # [form] - cechy paczki (wymiary, waga)
-    cod: json,                                      # [form] - wartość z pobraniem 
-    insurance: json,                                # [form] - ubezpieczenie
-    reference: str,                                 # dodatkowy opis przesyłki, tutaj id zamówienia
-    is_return: bool = False,                        # czy jest to zwort 
-    comments: str = "",                             #
-    only_choice_of_offer: bool = True,              # jeżeli True to tworzy przesyłkę bez opłaty, w inpost defaultowo jest False tzn. tworzenie i opłata
-    additional_services: list = ['sms', 'email']    #
-    ):
+def create_post_request(order_id: str, template: str) -> json:
+    mpk = 0
+    order = get_order(order_id)
+    customer = get_cusomer(order['id_customer'])
+    courier = get_courier(order['inpost_point'])
+    address = get_address(order['id_address_delivery'])
 
     return json.dumps({
-        "reference": reference,
+        "reference": "Zamówienie "+order_id,
         "mpk": mpk,
-        "comments": comments,
-        "receiver": receiver,
+        "comments": order['note'],
+        "receiver": create_receiver_form(courier, 
+            company_name=address['company_name'],
+            first_name=address['first_name'],
+            last_name=address['last_name'],
+            phone=address['phone'],
+            email=customer['email'],
+            address=create_address_form(
+                street=address['street'],
+                city=address['city'],
+                post_code=address['post_code']
+            ),
+            ),
         "sender": sender,
-        "parcels": parcels,
+        "parcels": create_parcels_form(template=template),
         "insurance": insurance,
         "cod": cod,
-        "additional_services": additional_services,
+        "additional_services": create_custom_attributes,
         "only_choice_of_offer": only_choice_of_offer,
         "is_return": is_return
     })
@@ -74,4 +78,3 @@ def get_inpost(api_key: str):
 
 
 get_inpost(INPOST_API)
-

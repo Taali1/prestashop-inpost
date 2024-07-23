@@ -10,11 +10,11 @@ load_dotenv()
 PRESTA_API = os.getenv('PRESTA_API')
 base_url = 'https://pracownia-firan.pl/sklep/api'
 
-def get_orders_request(api_key: str):
+def get_orders_request():
     url = f"{base_url}/orders"
     headers = {'Output-Format': 'JSON'}
 
-    response = requests.get(url, headers=headers, auth=HTTPBasicAuth(api_key, ''))
+    response = requests.get(url, headers=headers, auth=HTTPBasicAuth(PRESTA_API, ''))
 
     if response.status_code == 200:
         return response.json()
@@ -23,11 +23,17 @@ def get_orders_request(api_key: str):
         print(response.text)
         return None
 
-def get_order_request(api_key: str, order_id):
+def get_courier(inpost_point: str) -> json:
+    if inpost_point:
+        return False
+    else:
+        return True
+
+def get_order(order_id):
     url = f"{base_url}/orders/{order_id}"
     headers = {'Output-Format': 'JSON'}
 
-    response = requests.get(url, headers=headers, auth=HTTPBasicAuth(api_key, ''))
+    response = requests.get(url, headers=headers, auth=HTTPBasicAuth(PRESTA_API, ''))
 
     if response.status_code == 200:
         return response.json()['order']
@@ -37,51 +43,54 @@ def get_order_request(api_key: str, order_id):
         print(response.text)
         return None
 
-def get_orders(api_key: str):
+def get_address(address_delivery_id: str):
+    url = f"{base_url}/addresses/{address_delivery_id}"
+    headers = {'Output-Format': 'JSON'}
+
+    response = requests.get(url, headers=headers, auth=HTTPBasicAuth(PRESTA_API, ''))
+
+    if response.status_code == 200:
+        address = response.json()['address']
+        return {
+            "company_name": address["company"],
+            'first_name': address['firstname'],
+            'last_name': address['lastname'],
+            "street": address['address1'] + ' ' + address['address2'],
+            'post_code': address['postcode'],
+            'city': address['city'],
+            'phone': address['phone']
+            }
+    else:
+        print(f"Error: {response.status_code}")
+        print(response.text)
+        return None
+
+def get_orders():
     result = []
-    id_list = get_orders_request(api_key)['orders']
-    columns = ['id', 'id_address_delivery', 'id_cart', 'id_address_invoice', 'id_customer', 'current_state', 'valid', 'date_add', 'note', 'total_paid_real', 'associations']
+    id_list = get_orders_request()['orders']
 
     for order_id in id_list:
-        result += [get_order_request(api_key, order_id['id'])]
+        result += [get_order(order_id['id'])]
         print(f'{order_id["id"]}: Pass')
 
-    df = pd.DataFrame(result)
-    return df[columns]
+    return result
 
-def write_orders_csv(df_orders):
-    print('df written orders data')
-    df_orders.to_csv('orders_data.txt', sep='\t', index=False)
-
-def get_clients(api_key: str, customer_id):
+def get_cusomer(customer_id):
     url = f"{base_url}/customers/{customer_id}"
     headers = {'Output-Format': 'JSON'}
 
-    response = requests.get(url, headers=headers, auth=HTTPBasicAuth(api_key, ''))
+    response = requests.get(url, headers=headers, auth=HTTPBasicAuth(PRESTA_API, ''))
 
     if response.status_code == 200:
-        return response.json()
+        return response.json()['customer']
     else:
         print(f"Error: {response.status_code}")
         print(response.text)
         return None
 
-def get_address(api_key: str, address_id):
-    url = f"{base_url}/address/{address_id}"
-    headers = {'Output-Format': 'JSON'}
-
-    response = requests.get(url, headers=headers, auth=HTTPBasicAuth(api_key, ''))
-
-    if response.status_code == 200:
-        return response.json()
-    else:
-        print(f"Error: {response.status_code}")
-        print(response.text)
-        return None
-
-def create_sender_form(company_name: str, email: str, phone: str, address: json) -> json:
+def create_sender_form(company_name: str, email: str, phone: str, address: json, courier: bool) -> json:
     try:
-        if address:
+        if courier:
             return json.dumps({
                 "company_name": company_name,
                 "email": email,
@@ -119,27 +128,12 @@ def create_insurance(amount: int, currency: str = "PLN") -> json:
         print(error)
 
 
-def create_parcels_form( height: float, length: float, width: float, weight_amount: float, id: str = "package") -> json:
+def create_parcels_form(template: str, id: str = "package") -> json:
     try:    
-        # in InPost default unit is mm
-        # height, length, width [float]
-        dimensions = {
-            "height": height,
-            "length": length,
-            "width": width
-        }
-
-        # in InPost default unit is kg
-        # weight_amount [float]
-        weight = {
-            "weight_amount": weight_amount
-        }
-
-        if dimensions and weight:
+        if template:
             return json.dumps([{
-                "id": id, # idk losowe id = package
-                "dimensions": dimensions,
-                "wieght": weight
+                "id": id+template, # idk losowe id = package
+                "template": template
             }])
     except Exception as error:
         print(error)
@@ -167,7 +161,14 @@ def create_address_form(street: str, city: str, post_code: str) -> json:
     except Exception as error:
         print(error)
 
-def create_receiver_form(company_name: str, first_name: str, last_name: str, phone: str, email: str, address: str) -> json:
+def create_receiver_form(
+    company_name: str, 
+    first_name: str, 
+    last_name: str, 
+    phone: str, 
+    email: str, 
+    address: str, 
+    courier: bool) -> json:
 # company_name [str(255)] - wymagany gdy nie jest podany adres, imie, nazwisko
 # first_name [str] - wymagany gdy nie jest podany email, phone, company_name
 # last_name [str] - wymagany gdy nie jest podany email, phone, company_name
@@ -176,7 +177,7 @@ def create_receiver_form(company_name: str, first_name: str, last_name: str, pho
 # address [form] - wymagany gdy wysyłana kurierem
     try:
         if company_name: # wysyłka do firmy
-            if address: # kurier
+            if courier: # kurier
                 return json.dumps({
                     "company_name": company_name,
                     "phone": phone,
@@ -191,7 +192,7 @@ def create_receiver_form(company_name: str, first_name: str, last_name: str, pho
                 })
         
         if first_name and last_name: # wysyłka do osoby prywatnej
-            if address: # kurier
+            if courier: # kurier
                 return json.dumps({
                     "first_name": first_name,
                     "last_name": last_name,
@@ -210,5 +211,18 @@ def create_receiver_form(company_name: str, first_name: str, last_name: str, pho
         print(error)
 
 
+def get_test(id: str):
+    url = f"{base_url}/customers/{id}"
+    headers = {'Output-Format': 'JSON'}
 
-print(get_orders(PRESTA_API))
+    response = requests.get(url, headers=headers, auth=HTTPBasicAuth(PRESTA_API, ''))
+
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print(f"Error: {response.status_code}")
+        print(response.text)
+        return None
+
+
+print(json.dumps(get_address(33), indent=4))
