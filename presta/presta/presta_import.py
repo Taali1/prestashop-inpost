@@ -8,10 +8,10 @@ import json
 # Loading environmental variables
 load_dotenv()
 PRESTA_API = os.getenv('PRESTA_API')
-base_url = 'https://pracownia-firan.pl/sklep/api'
+BASE_URL = 'https://pracownia-firan.pl/sklep/api'
 
 def get_orders_request():
-    url = f"{base_url}/orders"
+    url = f"{BASE_URL}/orders"
     headers = {'Output-Format': 'JSON'}
 
     response = requests.get(url, headers=headers, auth=HTTPBasicAuth(PRESTA_API, ''))
@@ -30,7 +30,7 @@ def get_courier(inpost_point: str) -> json:
         return True
 
 def get_order(order_id):
-    url = f"{base_url}/orders/{order_id}"
+    url = f"{BASE_URL}/orders/{order_id}"
     headers = {'Output-Format': 'JSON'}
 
     response = requests.get(url, headers=headers, auth=HTTPBasicAuth(PRESTA_API, ''))
@@ -44,7 +44,7 @@ def get_order(order_id):
         return None
 
 def get_address(address_delivery_id: str):
-    url = f"{base_url}/addresses/{address_delivery_id}"
+    url = f"{BASE_URL}/addresses/{address_delivery_id}"
     headers = {'Output-Format': 'JSON'}
 
     response = requests.get(url, headers=headers, auth=HTTPBasicAuth(PRESTA_API, ''))
@@ -76,7 +76,7 @@ def get_orders():
     return result
 
 def get_cusomer(customer_id):
-    url = f"{base_url}/customers/{customer_id}"
+    url = f"{BASE_URL}/customers/{customer_id}"
     headers = {'Output-Format': 'JSON'}
 
     response = requests.get(url, headers=headers, auth=HTTPBasicAuth(PRESTA_API, ''))
@@ -212,7 +212,7 @@ def create_receiver_form(
 
 
 def get_test(id: str):
-    url = f"{base_url}/customers/{id}"
+    url = f"{BASE_URL}/orders/{id}"
     headers = {'Output-Format': 'JSON'}
 
     response = requests.get(url, headers=headers, auth=HTTPBasicAuth(PRESTA_API, ''))
@@ -225,4 +225,4 @@ def get_test(id: str):
         return None
 
 
-print(json.dumps(get_address(33), indent=4))
+print(json.dumps(get_test(49)["order"]["note"], indent=4))

@@ -51,9 +51,10 @@ def create_post_request(order_id: str, template: str) -> json:
         "parcels": create_parcels_form(template=template),
         "insurance": insurance,
         "cod": cod,
-        "additional_services": create_custom_attributes,
+        "additional_services": create_custom_attributes(),
         "only_choice_of_offer": only_choice_of_offer,
-        "is_return": is_return
+        "is_return": is_return,
+        "comments": order["note"]
     })
 
 

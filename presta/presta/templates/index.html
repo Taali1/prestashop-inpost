@@ -1,21 +1,202 @@
 <!DOCTYPE html>
-<html>
+<html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>Moja lista</title>
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prestashop InPost Import</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .order {
+            width: 80%;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input,
+        .form-group select {
+            width: calc(100% - 20px);
+            padding: 8px;
+            font-size: 1em;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .form-row .form-group {
+            flex: 1 1 calc(33.333% - 10px);
+        }
+        .buttons {
+            display: none;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .buttons button {
+            padding: 10px 20px;
+            font-size: 1em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .buttons button.reset {
+            background-color: #f0f0f0;
+        }
+        .buttons button.submit {
+            background-color: #007bff;
+            color: white;
+        }
+        .additional-info {
+            display: none;
+        }
+        .toggle-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            font-size: 1.5em;
+            text-align: center;
+            line-height: 30px;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1 class="my-4">Moja lista</h1>
-        <ul class="list-group">
-            {% for item in orders %}
-                <li class="list-group-item">{{ item }}</li>
-            {% endfor %}
-        </ul>
+    {% for order in orders %}
+    <div class="order">
+        <form id="importForm">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="reference">Zamówienie nr.</label>
+                    <input type="text" id="reference" name="reference", value="{{ order.reference }}">
+                </div>
+                <div class="form-group">
+                    <label for="first_name">Imię</label>
+                    <input type="text" id="first_name" name="first_name", value="{{ order.first_name }}">
+                </div>
+                <div class="form-group">
+                    <label for="second_name">Nazwisko</label>
+                    <input type="text" id="second_name" name="second_name", value="{{ order.second_name }}">
+                </div>
+            </div>
+            <div class="additional-info">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="phone">Telefon</label>
+                        <input type="text" id="phone" name="phone", value="{{ order.phone }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="company_name">Firma</label>
+                        <input type="text" id="company_name" name="company_name", value="{{ order.company_name }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email", value="{{ order.email }}">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="street">Ulica</label>
+                        <input type="text" id="street" name="street", value="{{ order.street }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="post_code">Kod pocztowy</label>
+                        <input type="text" id="post_code" name="post_code", value="{{ order.post_code }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="target_point">Punkt paczkomat</label>
+                        <input type="text" id="target_point" name="target_point", value="{{ order.target_point }}">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="cod">COD</label>
+                        <input type="text" id="cod" name="cod", value="{{ order.cod }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="note">Komentarz</label>
+                        <input type="text" id="note" name="note", value="{{ order.note }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="size">Wymiary</label>
+                        <select id="size" name="size">
+                            <option value="small">A - 8 x 38 x 64 cm</option>
+                            <option value="medium">B - 19 x 38 x 64 cm</option>
+                            <option value="large">C - 41 x 38 x 64 cm</option>
+                            <option value="xlarge">niezalecane - D - 50 x 50 x 80 cm</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="insurance">Insurance</label>
+                        <input type="text" id="insurance" name="insurance", value="{{ order.insurance }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="is_return">Is Return</label>
+                        <input type="text" id="is_return" name="is_return", value="{{ order.is_return }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="only_choice_of_offer">Only Choice of Offer</label>
+                        <input type="text" id="only_choice_of_offer" name="only_choice_of_offer", value="{{ order.only_choice_of_offer }}">
+                    </div>
+                </div>
+            </div>
+            <div class="buttons">
+                <button type="button" class="submit" onclick="submitForm()">Submit</button>
+            </div>
+        </form>
+        <button type="button" class="toggle-button" onclick="toggleAdditionalInfo()">+</button>
     </div>
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    {% endfor %}
+
+    <script>
+        function toggleAdditionalInfo() {
+            const additionalInfo = document.querySelector('.additional-info');
+            const buttons = document.querySelector('.buttons');
+            const button = document.querySelector('.toggle-button');
+            if (additionalInfo.style.display === 'none' || additionalInfo.style.display === '') {
+                additionalInfo.style.display = 'block';
+                buttons.style.display = 'flex';
+                button.textContent = '-';
+            } else {
+                additionalInfo.style.display = 'none';
+                buttons.style.display = 'none';
+                button.textContent = '+';
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('importForm').reset();
+            document.querySelector('.additional-info').style.display = 'none';
+            document.querySelector('.buttons').style.display = 'none';
+            document.querySelector('.toggle-button').textContent = '+';
+        }
+
+        function submitForm() {
+            const form = document.getElementById('importForm');
+            // Add form submission logic here
+            alert('Form submitted');
+        }
+    </script>
 </body>
 </html>
