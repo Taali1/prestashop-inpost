@@ -1,6 +1,5 @@
 import requests
 import os
-from requests.auth import HTTPBasicAuth
 from dotenv import load_dotenv
 import json
 from presta_import import *
@@ -11,31 +10,25 @@ load_dotenv()
 INPOST_API = os.getenv('INPOST_API')
 base_url = 'https://api-shipx-pl.easypack24.net/'
 
-def post_inpost(api_key: str) -> json:
-    url = base_url + '/v1/organizations/73164/shipments'
+def post_inpost(api_key: str, data) -> json:
+    url = base_url + 'v1/organizations/73164/shipments'
     headers = {
         'Authorization': f'Bearer {api_key}',
         'Content-Type': 'application/json'
     }
-
-    shipment = {
-
-    }
-
-    requests.post(url, headers=headers)
+    response = requests.post(url, headers=headers, json=data)
+    return response
 
 def create_post_request(order_id: str, template: str) -> json:
-    mpk = 0
     order = get_order(order_id)
-    customer = get_cusomer(order['id_customer'])
+    customer = get_customer(order['id_customer'])
     courier = get_courier(order['inpost_point'])
     address = get_address(order['id_address_delivery'])
-
+    print(address)
     return json.dumps({
-        "reference": "Zamówienie "+order_id,
-        "mpk": mpk,
+        "reference": "Zamówienie "+str(order_id),
         "comments": order['note'],
-        "receiver": create_receiver_form(courier, 
+        "receiver": create_receiver_form(courier=courier, 
             company_name=address['company_name'],
             first_name=address['first_name'],
             last_name=address['last_name'],
@@ -47,13 +40,10 @@ def create_post_request(order_id: str, template: str) -> json:
                 post_code=address['post_code']
             ),
             ),
-        "sender": sender,
-        "parcels": create_parcels_form(template=template),
-        "insurance": insurance,
-        "cod": cod,
-        "additional_services": create_custom_attributes(),
-        "only_choice_of_offer": only_choice_of_offer,
-        "is_return": is_return,
+        "parcels": create_parcels_form(template=template, id=order_id),
+        "insurance": "inpost_courier_standard",
+#        "additional_services": create_custom_attributes(),
+        "only_choice_of_offer": True,
         "comments": order["note"]
     })
 
@@ -77,5 +67,16 @@ def get_inpost(api_key: str):
         print(response.status_code)
         print(response.text)
 
+post_request = create_post_request(49, "A")
 
-get_inpost(INPOST_API)
+print(json.dumps(post_request, indent=4, ensure_ascii=False))
+
+response = post_inpost(INPOST_API, post_request)
+
+try:
+    response_json = response.json()
+    # Wyprintowanie sformatowanego JSON-a
+    print(json.dumps(response_json, indent=4, ensure_ascii=False))
+except ValueError:
+    # Jeśli odpowiedź nie jest JSON-em, wyprintuj tekst
+    print(response.text)

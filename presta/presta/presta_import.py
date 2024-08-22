@@ -2,7 +2,6 @@ import requests
 import os
 from requests.auth import HTTPBasicAuth
 from dotenv import load_dotenv
-import pandas as pd
 import json
 
 # Loading environmental variables
@@ -75,7 +74,7 @@ def get_orders():
 
     return result
 
-def get_cusomer(customer_id):
+def get_customer(customer_id):
     url = f"{BASE_URL}/customers/{customer_id}"
     headers = {'Output-Format': 'JSON'}
 
@@ -129,11 +128,47 @@ def create_insurance(amount: int, currency: str = "PLN") -> json:
 
 
 def create_parcels_form(template: str, id: str = "package") -> json:
+    parcel_types = {
+        "A": {
+            "dimensions": {
+                "height": 80.0,
+                "length": 380.0,
+                "width": 640.0
+            },
+            "weight": {
+                    "amount": 10.0
+            }
+        },
+        "B": {
+            "dimensions": {
+                "height": 190.0,
+                "length": 380.0,
+                "width": 640.0
+                
+            },
+            "weight": {
+                    "amount": 10.0
+            }
+        },
+        "C": {
+            "dimensions": {
+                "height": 410.0,
+                "length": 380.0,
+                "width": 640.0
+            },
+            "weight": {
+                    "amount": 10.0
+            }
+        }
+    }
+
+
+
     try:    
         if template:
             return json.dumps([{
-                "id": id+template, # idk losowe id = package
-                "template": template
+                "id": str(id)+" package "+template, # idk losowe id = package
+                "parcels": parcel_types[template]
             }])
     except Exception as error:
         print(error)
